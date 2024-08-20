@@ -1,9 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { Slug } from "./value-objects/slug";
-import { Entity } from "@/core/entities/entity";
 import { UniqueEntityID } from "@/core/entities/unique-entity-id";
 import { Optional } from "@/core/@types/optional";
 import dayjs from "dayjs";
+import { AggregateRoot } from "@/core/entities/aggregate-root";
+import { QuestionAttachment } from "./question-attachment";
+import { QuestionAttachmentList } from "./question-attachment-list";
 
 export interface QuestionProps {
   title: string;
@@ -11,11 +12,12 @@ export interface QuestionProps {
   slug: Slug;
   authorId: UniqueEntityID;
   bestAnswerId?: UniqueEntityID;
+  attachments: QuestionAttachmentList;
   createdAt: Date;
   updatedAt?: Date;
 }
 
-export class Question extends Entity<QuestionProps> {
+export class Question extends AggregateRoot<QuestionProps> {
   private touch() {
     this.props.updatedAt = new Date();
   }
@@ -40,6 +42,10 @@ export class Question extends Entity<QuestionProps> {
     return this.props.title;
   }
 
+  get attachments() {
+    return this.props.attachments;
+  }
+
   get createdAt() {
     return this.props.createdAt;
   }
@@ -61,6 +67,11 @@ export class Question extends Entity<QuestionProps> {
     this.touch();
   }
 
+  set attachments(attachments: QuestionAttachmentList) {
+    this.props.attachments = attachments;
+    this.touch();
+  }
+
   set bestAnswerId(bestAnswerId: UniqueEntityID | undefined) {
     this.props.bestAnswerId = bestAnswerId;
     this.touch();
@@ -72,7 +83,7 @@ export class Question extends Entity<QuestionProps> {
     this.touch();
   }
   static create(
-    props: Optional<QuestionProps, "createdAt" | "slug">,
+    props: Optional<QuestionProps, "createdAt" | "slug" | "attachments">,
     id?: UniqueEntityID
   ) {
     const question = new Question(
@@ -80,6 +91,7 @@ export class Question extends Entity<QuestionProps> {
         ...props,
         createdAt: props.createdAt ?? new Date(),
         slug: props.slug ?? Slug.createFromText(props.title),
+        attachments: props.attachments ?? new QuestionAttachmentList(),
       },
       id
     );
